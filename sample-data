@@ -1,0 +1,42 @@
+/*
+  JFEntityStoreSchema :
+  {
+  schemaName : "cell-cust_grid"
+  keys : ["cell", "customer", "grid"]
+  index : { "cell" : 0, "customer" : 1, "grid" : 2}
+  }
+
+==================================================================================================
+
+  JFPropertyStoreSchema :
+  {
+  schemaName : "property_schema"
+  keys : ["total_call_count", "created_time", .. ]
+  index : { "total_call_count" : 0, "created_time" : 1, ... : 2}
+  ** value : { "total_call_count" : quantity_template, "created_time" : quantity_template}
+  }
+
+======================================================================================================
+
+  JFAttributeStoreSchema :
+  {
+  schemaName : "attribute_schema"
+  keys : ["cell", "customer", "grid"]
+  index  : { "cell" : 0, "customer" : 1, "grid" : 2}
+  ** value : { "cell" : JFPropertyStoreSchema_0 ,
+               "customer" :  JFPropertyStoreSchema_1
+                ... }
+
+  JFPropertyStoreSchema_1 = {
+    keys : ["customer-type", "location", .. ]
+    index : { "customer-type" : 0, "location" : 1, ... : 2}
+    ** value : { "customer-type" : quantity_template, "location" : quantity_template}
+    }
+
+  }
+ */
+
+============================================================================================================
+/*
+  attributes : { 1: { "cust-1" : { 0 : "premium", 1: "lat-long"}} }
+ */
