@@ -35,4 +35,14 @@ public class SchemaProtoTest {
 
         restTemplate.put("/schema/property/log/605b0ecb1545ac7be9ca9edf",quantityTemplate);
     }
+
+    @Test
+    public void setAttributesToJFLogSchema() {
+        QuantityTemplate quantityTemplate = new QuantityTemplate();
+        quantityTemplate.setPropertyName("name");
+        quantityTemplate.setType("type");
+        quantityTemplate.setUnit("unit");
+        quantityTemplate.setQuantityType(QuantityTemplate.JfQuantityType.QtySymbolic);
+        restTemplate.put("/schema/attribute/log/605b0ecb1545ac7be9ca9edf?entityType=customer",quantityTemplate);
+    }
 }
