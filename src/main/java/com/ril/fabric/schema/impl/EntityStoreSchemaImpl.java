@@ -1,7 +1,6 @@
 package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.jio.protos.fabric.event.LogEventSchema;
 import com.jio.protos.fabric.store.EntityStoreSchema.JFEntityStoreSchema;
@@ -38,7 +37,7 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         document.remove("_id");
         LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
         try {
-            getEventBuilder(document.toJson(), logEventSchemaBuilder);
+            JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -53,10 +52,6 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private void getEventBuilder(String json, Message.Builder builder) throws InvalidProtocolBufferException {
-        JsonFormat.parser().merge(json, builder);
     }
 
     @Override
@@ -74,7 +69,9 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
             return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        boolean hasKey = hasKey(entity, logEventSchemaBuilder.getEntitiesSchema());
+        if (hasKey(entity, logEventSchemaBuilder.getEntitiesSchema()))
+            return new ResponseEntity<>(new ExceptionResponse(new Date(), "Entity already added in the schema: " + entity, ""), HttpStatus.NOT_FOUND);
+
         JFEntityStoreSchema.Builder jfEntityStoreSchemaBuilder = logEventSchemaBuilder.getEntitiesSchema().toBuilder();
         jfEntityStoreSchemaBuilder.addKeys(entity);
         logEventSchemaBuilder.setEntitiesSchema(jfEntityStoreSchemaBuilder.build());

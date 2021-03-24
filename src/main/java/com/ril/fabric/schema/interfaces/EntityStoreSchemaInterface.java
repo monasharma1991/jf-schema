@@ -9,7 +9,7 @@ public interface EntityStoreSchemaInterface {
     ResponseEntity<?> addEntityToLogSchema(String schemaId, String entity);
     ResponseEntity<?> searchByEntityType(String phrase);
 
-    // pivot apis
+    // pivot schema functions
     ResponseEntity<?> addEntitiesToPivotSchema(String pivotSchemaId, Set<String> entities);
 
 }
