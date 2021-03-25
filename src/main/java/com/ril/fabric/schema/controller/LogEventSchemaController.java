@@ -19,9 +19,13 @@ public class LogEventSchemaController {
         this.logEventSchemaInterface = logEventSchemaInterface;
     }
 
+    // TODO- add topic namre in req param if blank generate
     @PostMapping({"", "/"})
-    public ResponseEntity<?> createLogEventSchema(@RequestParam String vertical, @RequestParam String source, @RequestParam String domain) throws InvalidProtocolBufferException {
-        return logEventSchemaInterface.createLogEventSchema(vertical, source, domain);
+    public ResponseEntity<?> createLogEventSchema(@RequestParam String vertical,
+                                                  @RequestParam String source,
+                                                  @RequestParam String domain,
+                                                  @RequestParam String topic) throws InvalidProtocolBufferException {
+        return logEventSchemaInterface.createLogEventSchema(vertical, source, domain, topic);
     }
 
     @PutMapping("/{logEventSchemaId}/save")

@@ -1,10 +1,13 @@
 package com.ril.fabric.schema;
 
 import com.ril.fabric.schema.domain.QuantityTemplate;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 
@@ -16,7 +19,16 @@ public class SchemaProtoTest {
 
     @Test
     public void createJFLogSchema() {
-        restTemplate.postForEntity("/schema/log?vertical=a&source=b&domain=c", null, Void.class);
+        ResponseEntity<?> response = restTemplate.postForEntity("/schema/log?vertical=a&source=b&domain=c", null, Void.class);
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(response.getStatusCode(), HttpStatus.CREATED);
+    }
+
+    @Test
+    public void getErrorWhileCreating(){
+        ResponseEntity<?> response = restTemplate.postForEntity("/schema/log?vertical=a&source=&domain=c", null, Void.class);
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
     }
 
     @Test

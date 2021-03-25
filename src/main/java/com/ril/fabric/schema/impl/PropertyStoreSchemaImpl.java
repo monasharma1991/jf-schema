@@ -9,6 +9,7 @@ import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
 import com.ril.fabric.schema.interfaces.PropertyStoreSchemaInterface;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
+
 @Service
+@Slf4j
 public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
 
 
@@ -30,6 +35,12 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
 
     @Override
     public ResponseEntity<?> addPropertyToSchema(String logSchemaId, QuantityTemplate quantityTemplate) {
+        // TODO - Validate QuantityTemplate
+        List<String> errorList = validateQuantityTemplate(quantityTemplate);
+        if ( errorList!=null && errorList.size()>0 ){
+            log.info("Invalid data for Adding Property to Schema in QuantityTemplate. Please Provide !!!");
+            return new ResponseEntity<>(errorList, HttpStatus.BAD_REQUEST);
+        }
 
         Document document = mongoTemplateService.findById(logSchemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null){
@@ -61,6 +72,17 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private List<String> validateQuantityTemplate(QuantityTemplate quantityTemplate){
+        List<String> errorList = new ArrayList<>();
+
+        if ( quantityTemplate.getPropertyName() == null )
+            errorList.add("Property Name is not null in QuantityTemplate. Please Provide First !!!");
+        if ( quantityTemplate.getQuantityType() == null )
+            errorList.add("Unit is not null in QuantityTemplate. Please Provide first !!!");
+
+        return errorList;
     }
 
     private PropertyStoreSchema.JFQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
