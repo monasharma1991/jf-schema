@@ -42,7 +42,7 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
         }
         Document doc = Document.parse(schemaJson);
         mongoTemplateService.saveDocument(doc, EventSchemaType.getLogSchemaCollection());
-        return new ResponseEntity<>(doc, HttpStatus.CREATED);
+        return new ResponseEntity<>(doc.toJson(), HttpStatus.CREATED);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
         if (document == null)
             return new ResponseEntity<>(new ExceptionResponse(new Date(), "No entity found for schema id: " + logEventSchemaId, ""), HttpStatus.NOT_FOUND);
 
-        return new ResponseEntity<>(document, HttpStatus.OK);
+        return new ResponseEntity<>(document.toJson(), HttpStatus.OK);
 
     }
 

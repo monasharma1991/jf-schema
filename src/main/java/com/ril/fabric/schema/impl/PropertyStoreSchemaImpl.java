@@ -54,7 +54,7 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
             Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
             documentNew.put("_id", new ObjectId(logSchemaId));
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
-            return new ResponseEntity<>(documentNew, HttpStatus.OK);
+            return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
         }
