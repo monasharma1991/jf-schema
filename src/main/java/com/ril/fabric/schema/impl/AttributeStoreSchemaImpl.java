@@ -15,31 +15,36 @@ import com.ril.fabric.schema.interfaces.AttributeStoreSchemaInterface;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Locale;
 
 @Service
 public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
 
     @Autowired
-    MongoTemplateService mongoTemplateService;
+    private MongoTemplateService mongoTemplateService;
+    @Autowired
+    private MessageSource msgSrc;
 
     @Override
     public ResponseEntity<?> addAttributeToSchema(String logSchemaId, String entityType, QuantityTemplate quantityTemplate) {
 
         Document document = mongoTemplateService.findById(logSchemaId, EventSchemaType.getLogSchemaCollection());
-        if (document == null)
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), "No record found for schema id: " + logSchemaId, ""), HttpStatus.NOT_FOUND);
-
+        if (document == null) {
+            String[] arguments = {"logSchema", logSchemaId};
+            return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
+        }
         document.remove("_id");
         LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
         try {
             JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         AttributeStoreSchema.JFAttributeStoreSchema.Builder attributeStoreSchema = logEventSchemaBuilder.getAttributesSchema().toBuilder();
@@ -62,7 +67,7 @@ public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -1,7 +1,6 @@
 package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.jio.protos.commons.*;
 import com.jio.protos.fabric.event.LogEventSchema;
@@ -9,16 +8,16 @@ import com.jio.protos.fabric.store.PropertyStoreSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
-import com.ril.fabric.schema.exception.ExceptionResponse;
 import com.ril.fabric.schema.interfaces.PropertyStoreSchemaInterface;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.util.Locale;
 
 @Service
 public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
@@ -26,26 +25,30 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
 
     @Autowired
     private MongoTemplateService mongoTemplateService;
+    @Autowired
+    private MessageSource msgSrc;
 
     @Override
     public ResponseEntity<?> addPropertyToSchema(String logSchemaId, QuantityTemplate quantityTemplate) {
 
         Document document = mongoTemplateService.findById(logSchemaId, EventSchemaType.getLogSchemaCollection());
-        if (document == null)
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), "No record found for schema id: " + logSchemaId, ""), HttpStatus.NOT_FOUND);
+        if (document == null){
+            String[] arguments = {"logSchema", logSchemaId};
+            return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
+        }
 
         document.remove("_id");
         LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
         try {
             JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         PropertyStoreSchema.JFPropertyStoreSchema.Builder propertyStoreSchema = logEventSchemaBuilder.getPropertiesSchemaBuilder();
         String propertyName = quantityTemplate.getPropertyName();
         if (propertyStoreSchema.getKeysList().contains(propertyName))
-            return new ResponseEntity<>("Already exists", HttpStatus.OK);
+            return new ResponseEntity<>("Already exists", HttpStatus.INTERNAL_SERVER_ERROR);
 
         propertyStoreSchema.addKeys(propertyName);
         propertyStoreSchema.putValues(propertyName, getQuantitySchema(quantityTemplate));
@@ -56,7 +59,7 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), e.getMessage(), ""), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

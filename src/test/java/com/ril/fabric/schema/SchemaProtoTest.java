@@ -21,7 +21,7 @@ public class SchemaProtoTest {
 
     @Test
     public void setEntityToJFLogSchema() {
-        restTemplate.put("/schema/entity/605b0ecb1545ac7be9ca9edf", Arrays.asList("customer","cell","grid"), Void.class);
+        restTemplate.put("/schema/entity/605b0ecb1545ac7be9ca9edf", Arrays.asList("customer", "cell", "grid"), Void.class);
     }
 
     @Test
@@ -32,8 +32,7 @@ public class SchemaProtoTest {
         quantityTemplate.setUnit("unit");
         quantityTemplate.setQuantityType(QuantityTemplate.JfQuantityType.QtyNumeric);
         quantityTemplate.setQuantitySubType(QuantityTemplate.JfQuantitySubType.float_value);
-
-        restTemplate.put("/schema/property/log/605b0ecb1545ac7be9ca9edf",quantityTemplate);
+        restTemplate.put("/schema/property/log/605b0ecb1545ac7be9ca9edf", quantityTemplate);
     }
 
     @Test
@@ -43,6 +42,6 @@ public class SchemaProtoTest {
         quantityTemplate.setType("type");
         quantityTemplate.setUnit("unit");
         quantityTemplate.setQuantityType(QuantityTemplate.JfQuantityType.QtySymbolic);
-        restTemplate.put("/schema/attribute/log/605b0ecb1545ac7be9ca9edf?entityType=customer",quantityTemplate);
+        restTemplate.put("/schema/attribute/log/605b0ecb1545ac7be9ca9edf?entityType=customer", quantityTemplate);
     }
 }
