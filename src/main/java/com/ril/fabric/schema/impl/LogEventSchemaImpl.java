@@ -3,8 +3,7 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.protos.fabric.event.LogEventSchema;
-import com.jio.protos.fabric.event.LogEventSchema.JFLogEventSchema;
+import com.jio.fabric.schema.FabricEventSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.exception.ExceptionResponse;
@@ -45,11 +44,11 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
         if ( topic.isBlank() || topic == null )
             topic = generateTopic(vertical, source, domain);
 
-        JFLogEventSchema jfLogEventSchema = JFLogEventSchema.newBuilder()
-                .setVertical(vertical)
-                .setSource(source)
-                .setDomain(domain)
-                .setTopic(topic)
+        FabricEventSchema jfLogEventSchema = FabricEventSchema.newBuilder()
+               // .setVertical(vertical)
+               // .setSource(source)
+               // .setDomain(domain)
+                .setInputTopic(topic)
                 .build();
 
         String schemaJson = null;
@@ -73,7 +72,7 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
             return new ResponseEntity<>(new ExceptionResponse(new Date(), "No LogEventSchema found for schema id: " + logEventSchemaId, ""), HttpStatus.NOT_FOUND);
 
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder logEventSchemaBuilder = FabricEventSchema.newBuilder();
         try {
             JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
@@ -119,7 +118,7 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
         }
 
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder logEventSchemaBuilder = FabricEventSchema.newBuilder();
         try {
             JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {

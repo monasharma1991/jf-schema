@@ -1,8 +1,7 @@
 package com.ril.fabric.schema;
 
-import com.google.protobuf.Descriptors;
-import com.jio.protos.commons.QtyNumeric;
-import com.jio.protos.commons.Quantity;
+import com.jio.commons.QtyNumeric;
+import com.jio.commons.Quantity;
 import org.junit.jupiter.api.Test;
 
 public class JfSchemaTest {

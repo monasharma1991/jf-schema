@@ -2,8 +2,8 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.protos.fabric.event.LogEventSchema;
-import com.jio.protos.fabric.store.EntityStoreSchema.JFEntityStoreSchema;
+import com.jio.fabric.schema.FabricEntityStoreSchema;
+import com.jio.fabric.schema.FabricEventSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.interfaces.EntityStoreSchemaInterface;
@@ -39,17 +39,17 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         }
 
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder eventSchemaBuilder = FabricEventSchema.newBuilder();
         try {
-            JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
+            JsonFormat.parser().merge(document.toJson(), eventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        logEventSchemaBuilder.setEntitiesSchema(JFEntityStoreSchema.newBuilder().addAllKeys(entities).build());
+        eventSchemaBuilder.getLogEventSchemaBuilder().setEntitiesSchema(FabricEntityStoreSchema.newBuilder().addAllKeys(entities).build());
 
         try {
-            Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
+            Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
             documentNew.put("_id", new ObjectId(schemaId));
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
@@ -68,24 +68,22 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         }
 
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder eventSchemaBuilder = FabricEventSchema.newBuilder();
         try {
-            JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
+            JsonFormat.parser().merge(document.toJson(), eventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        if (hasKey(entity, logEventSchemaBuilder.getEntitiesSchema())) {
+        if (hasKey(entity, eventSchemaBuilder.getLogEventSchema().getEntitiesSchema())) {
             String[] arguments = {"EntityType", entity};
             return new ResponseEntity<>(msgSrc.getMessage("record.already.exists", arguments, Locale.getDefault()), HttpStatus.OK);
         }
 
-        JFEntityStoreSchema.Builder jfEntityStoreSchemaBuilder = logEventSchemaBuilder.getEntitiesSchema().toBuilder();
-        jfEntityStoreSchemaBuilder.addKeys(entity);
-        logEventSchemaBuilder.setEntitiesSchema(jfEntityStoreSchemaBuilder.build());
+        eventSchemaBuilder.getLogEventSchema().getEntitiesSchema().toBuilder().addKeys(entity);
 
         try {
-            Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
+            Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
             documentNew.put("_id", new ObjectId(schemaId));
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
@@ -113,7 +111,7 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         return null;
     }
 
-    private boolean hasKey(String entity, JFEntityStoreSchema entitiesSchema) {
+    private boolean hasKey(String entity, FabricEntityStoreSchema entitiesSchema) {
 
         if (entitiesSchema.getKeysList().contains(entity))
             return true;

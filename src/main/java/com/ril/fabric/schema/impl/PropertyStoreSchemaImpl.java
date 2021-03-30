@@ -2,9 +2,10 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.protos.commons.*;
-import com.jio.protos.fabric.event.LogEventSchema;
-import com.jio.protos.fabric.store.PropertyStoreSchema;
+import com.jio.commons.*;
+import com.jio.fabric.schema.FabricEventSchema;
+import com.jio.fabric.schema.FabricQuantitySchema;
+import com.jio.fabric.schema.FabricQuantityStoreSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
@@ -49,23 +50,24 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
         }
 
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder eventSchemaBuilder = FabricEventSchema.newBuilder();
         try {
-            JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
+            JsonFormat.parser().merge(document.toJson(), eventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        PropertyStoreSchema.JFPropertyStoreSchema.Builder propertyStoreSchema = logEventSchemaBuilder.getPropertiesSchemaBuilder();
+        FabricQuantityStoreSchema.Builder propertyStoreSchema = eventSchemaBuilder.getLogEventSchema().getQuantitySchema().toBuilder();
         String propertyName = quantityTemplate.getPropertyName();
         if (propertyStoreSchema.getKeysList().contains(propertyName))
             return new ResponseEntity<>("Already exists", HttpStatus.INTERNAL_SERVER_ERROR);
 
         propertyStoreSchema.addKeys(propertyName);
         propertyStoreSchema.putValues(propertyName, getQuantitySchema(quantityTemplate));
+        eventSchemaBuilder.getLogEventSchemaBuilder().setQuantitySchema(propertyStoreSchema);
 
         try {
-            Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
+            Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
             documentNew.put("_id", new ObjectId(logSchemaId));
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
@@ -85,9 +87,9 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
         return errorList;
     }
 
-    private PropertyStoreSchema.JFQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
+    private FabricQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
 
-        PropertyStoreSchema.JFQuantitySchema.Builder propertyBuilder = PropertyStoreSchema.JFQuantitySchema.newBuilder();
+        FabricQuantitySchema.Builder propertyBuilder = FabricQuantitySchema.newBuilder();
         propertyBuilder.setType(quantityTemplate.getType());
         propertyBuilder.setUnit(quantityTemplate.getUnit());
         Quantity.Builder quantityBuilder = Quantity.newBuilder();

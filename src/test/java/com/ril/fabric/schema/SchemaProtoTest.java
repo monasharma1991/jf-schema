@@ -19,7 +19,7 @@ public class SchemaProtoTest {
 
     @Test
     public void createJFLogSchema() {
-        ResponseEntity<?> response = restTemplate.postForEntity("/schema/log?vertical=a&source=b&domain=c", null, Void.class);
+        ResponseEntity<?> response = restTemplate.postForEntity("/schema/log?vertical=a&source=b&domain=c&topic=", null, Void.class);
         Assertions.assertNotNull(response);
         Assertions.assertEquals(response.getStatusCode(), HttpStatus.CREATED);
     }
@@ -33,7 +33,7 @@ public class SchemaProtoTest {
 
     @Test
     public void setEntityToJFLogSchema() {
-        restTemplate.put("/schema/entity/605b0ecb1545ac7be9ca9edf", Arrays.asList("customer", "cell", "grid"), Void.class);
+        restTemplate.put("/schema/entity/6062cf1e6d624228c31e9815", Arrays.asList("customer", "cell"), Void.class);
     }
 
     @Test
@@ -44,7 +44,7 @@ public class SchemaProtoTest {
         quantityTemplate.setUnit("unit");
         quantityTemplate.setQuantityType(QuantityTemplate.JfQuantityType.QtyNumeric);
         quantityTemplate.setQuantitySubType(QuantityTemplate.JfQuantitySubType.float_value);
-        restTemplate.put("/schema/property/log/605b0ecb1545ac7be9ca9edf", quantityTemplate);
+        restTemplate.put("/schema/property/log/6062cf1e6d624228c31e9815", quantityTemplate);
     }
 
     @Test
@@ -54,6 +54,6 @@ public class SchemaProtoTest {
         quantityTemplate.setType("type");
         quantityTemplate.setUnit("unit");
         quantityTemplate.setQuantityType(QuantityTemplate.JfQuantityType.QtySymbolic);
-        restTemplate.put("/schema/attribute/log/605b0ecb1545ac7be9ca9edf?entityType=customer", quantityTemplate);
+        restTemplate.put("/schema/attribute/log/6062cf1e6d624228c31e9815?entityType=customer", quantityTemplate);  // entity does not exist error
     }
 }

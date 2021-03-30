@@ -3,14 +3,11 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.protos.commons.*;
-import com.jio.protos.fabric.event.LogEventSchema;
-import com.jio.protos.fabric.store.AttributeStoreSchema;
-import com.jio.protos.fabric.store.PropertyStoreSchema;
+import com.jio.commons.*;
+import com.jio.fabric.schema.*;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
-import com.ril.fabric.schema.exception.ExceptionResponse;
 import com.ril.fabric.schema.interfaces.AttributeStoreSchemaInterface;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -20,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.Locale;
 
 @Service
@@ -40,16 +36,23 @@ public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
         document.remove("_id");
-        LogEventSchema.JFLogEventSchema.Builder logEventSchemaBuilder = LogEventSchema.JFLogEventSchema.newBuilder();
+        FabricEventSchema.Builder eventSchemaBuilder = FabricEventSchema.newBuilder();
+
         try {
-            JsonFormat.parser().merge(document.toJson(), logEventSchemaBuilder);
+            JsonFormat.parser().merge(document.toJson(), eventSchemaBuilder);
         } catch (InvalidProtocolBufferException e) {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        AttributeStoreSchema.JFAttributeStoreSchema.Builder attributeStoreSchema = logEventSchemaBuilder.getAttributesSchema().toBuilder();
+        FabricEntityStoreSchema entityStoreSchema = eventSchemaBuilder.getLogEventSchema().getEntitiesSchema();
+        if (!entityStoreSchema.getKeysList().contains(entityType)) {
+            String[] arguments = {"entity", entityType};
+            return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
+        }
 
-        PropertyStoreSchema.JFPropertyStoreSchema.Builder propertyBuilder = PropertyStoreSchema.JFPropertyStoreSchema.newBuilder();
+        FabricAttributeStoreSchema.Builder attributeStoreSchema = eventSchemaBuilder.getLogEventSchema().getAttributesSchema().toBuilder();
+
+        FabricQuantityStoreSchema.Builder propertyBuilder = FabricQuantityStoreSchema.newBuilder();
         if (attributeStoreSchema.getValuesMap().get(entityType) != null) {
             propertyBuilder = attributeStoreSchema.getValuesMap().get(entityType).toBuilder();
         }
@@ -59,10 +62,10 @@ public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
         propertyBuilder.putValues(propertyName, getQuantitySchema(quantityTemplate));
 
         attributeStoreSchema.putValues(entityType, propertyBuilder.build());
-        logEventSchemaBuilder.setAttributesSchema(attributeStoreSchema.build());
+        eventSchemaBuilder.getLogEventSchemaBuilder().setAttributesSchema(attributeStoreSchema.build());
 
         try {
-            Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
+            Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
             documentNew.put("_id", new ObjectId(logSchemaId));
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
@@ -71,28 +74,28 @@ public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
         }
     }
 
-    private PropertyStoreSchema.JFQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
+    private FabricQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
 
-        PropertyStoreSchema.JFQuantitySchema.Builder propertyBuilder = PropertyStoreSchema.JFQuantitySchema.newBuilder();
-        propertyBuilder.setType(quantityTemplate.getType());
-        propertyBuilder.setUnit(quantityTemplate.getUnit());
-        Quantity.Builder quantityBuilder = Quantity.newBuilder();
+        FabricQuantitySchema.Builder quantityBuilder = FabricQuantitySchema.newBuilder();
+        quantityBuilder.setType(quantityTemplate.getType());
+        quantityBuilder.setUnit(quantityTemplate.getUnit());
+        Quantity.Builder qtyBuilder = Quantity.newBuilder();
 
         if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyNumeric))
-            setNumericSubType(quantityTemplate.getQuantitySubType(), quantityBuilder);
+            setNumericSubType(quantityTemplate.getQuantitySubType(), qtyBuilder);
         else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtySymbolic))
-            quantityBuilder.setSymbolic(QtySymbolic.newBuilder().build());
+            qtyBuilder.setSymbolic(QtySymbolic.newBuilder().build());
         else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyTemporal))
-            setTemporalSubType(quantityTemplate.getQuantitySubType(), quantityBuilder);
+            setTemporalSubType(quantityTemplate.getQuantitySubType(), qtyBuilder);
         else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtySpatial))
-            quantityBuilder.setSpatial(QtySpatial.newBuilder().build());
+            qtyBuilder.setSpatial(QtySpatial.newBuilder().build());
         else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyDemographic))
-            quantityBuilder.setDemographic(QtyDemographic.newBuilder().build());
+            qtyBuilder.setDemographic(QtyDemographic.newBuilder().build());
         else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyMonetary))
-            quantityBuilder.setMonetary(QtyMonetary.newBuilder().build());
+            qtyBuilder.setMonetary(QtyMonetary.newBuilder().build());
 
-        propertyBuilder.setQuantityTemplate(quantityBuilder.build());
-        return propertyBuilder.build();
+        quantityBuilder.setQuantityTemplate(qtyBuilder.build());
+        return quantityBuilder.build();
 
     }
 
