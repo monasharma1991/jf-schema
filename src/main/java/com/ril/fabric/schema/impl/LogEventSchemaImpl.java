@@ -17,9 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -125,5 +126,14 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return new ResponseEntity<>(logEventSchemaBuilder.build(), HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> getAllLogSchemas() {
+       List<Document> result = mongoTemplateService.findAll(EventSchemaType.getLogSchemaCollection());
+       if (result.isEmpty())
+           return new ResponseEntity<>("No records found", HttpStatus.OK);
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

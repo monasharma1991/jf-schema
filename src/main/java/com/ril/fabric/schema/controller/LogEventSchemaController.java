@@ -48,4 +48,8 @@ public class LogEventSchemaController {
         return logEventSchemaInterface.getLogSchemaProtoById(logEventSchemaId);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllLogSchemas() {
+        return logEventSchemaInterface.getAllLogSchemas();
+    }
 }

@@ -7,4 +7,5 @@ public interface LogEventSchemaInterface {
     ResponseEntity<?> setFinaliseAndIndex(String logEventSchemaId);
     ResponseEntity<?> getSchemaDocumentById(String logEventSchemaId);
     ResponseEntity<?> getLogSchemaProtoById(String logEventSchemaId);
+    ResponseEntity<?> getAllLogSchemas();
 }
