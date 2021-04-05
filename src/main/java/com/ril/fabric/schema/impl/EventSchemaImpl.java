@@ -3,14 +3,13 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.fabric.schema.FabricEventSchema;
+import com.jio.fabric.event.FabricEventSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.exception.ExceptionResponse;
-import com.ril.fabric.schema.interfaces.LogEventSchemaInterface;
+import com.ril.fabric.schema.interfaces.EventSchemaInterface;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -20,12 +19,11 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 
 @Service
 @Slf4j
-public class LogEventSchemaImpl implements LogEventSchemaInterface {
+public class EventSchemaImpl implements EventSchemaInterface {
 
     @Autowired
     private MongoTemplateService mongoTemplateService;
@@ -33,23 +31,10 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
     private MessageSource msgSrc;
 
     @Override
-    public ResponseEntity<?> createLogEventSchema(String vertical, String source, String domain, String topic) {
-
-        if ( vertical.isBlank() )
-            return new ResponseEntity<>("Vertical is not null. Please provide!!!", HttpStatus.BAD_REQUEST);
-        if ( source.isBlank() )
-            return new ResponseEntity<>("Source is not null. Please provide!!!", HttpStatus.BAD_REQUEST);
-        if ( domain.isBlank() )
-            return new ResponseEntity<>("Domain is not null. Please provide!!!", HttpStatus.BAD_REQUEST);
-
-        if ( topic.isBlank() || topic == null )
-            topic = generateTopic(vertical, source, domain);
+    public ResponseEntity<?> createEventSchema(String name) {
 
         FabricEventSchema jfLogEventSchema = FabricEventSchema.newBuilder()
-               // .setVertical(vertical)
-               // .setSource(source)
-               // .setDomain(domain)
-                .setInputTopic(topic)
+                .setSchemaName(name)
                 .build();
 
         String schemaJson = null;
@@ -59,18 +44,16 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         Document doc = Document.parse(schemaJson);
+        doc.put("_id", Math.abs(name.hashCode()));
         mongoTemplateService.saveDocument(doc, EventSchemaType.getLogSchemaCollection());
         return new ResponseEntity<>(doc.toJson(), HttpStatus.CREATED);
     }
-    private String generateTopic(String vertical, String source, String domain){
-        return vertical+"_"+source+"_"+domain;
-    }
 
     @Override
-    public ResponseEntity<?> setFinaliseAndIndex(String logEventSchemaId) {
-        Document document = mongoTemplateService.findById(logEventSchemaId, EventSchemaType.getLogSchemaCollection());
+    public ResponseEntity<?> setFinaliseAndIndex(int eventSchemaId) {
+        Document document = mongoTemplateService.findById(eventSchemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null)
-            return new ResponseEntity<>(new ExceptionResponse(new Date(), "No LogEventSchema found for schema id: " + logEventSchemaId, ""), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new ExceptionResponse(new Date(), "No LogEventSchema found for schema id: " + eventSchemaId, ""), HttpStatus.NOT_FOUND);
 
         document.remove("_id");
         FabricEventSchema.Builder logEventSchemaBuilder = FabricEventSchema.newBuilder();
@@ -85,7 +68,7 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
 
         try {
             Document documentNew = Document.parse(JsonFormat.printer().print(logEventSchemaBuilder));
-            documentNew.put("_id", new ObjectId(logEventSchemaId));
+            documentNew.put("_id", eventSchemaId);
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
@@ -95,13 +78,12 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
     }
 
 
-
     @Override
-    public ResponseEntity<?> getSchemaDocumentById(String logEventSchemaId) {
+    public ResponseEntity<?> getSchemaDocumentById(int eventSchemaId) {
 
-        Document document = mongoTemplateService.findById(logEventSchemaId, EventSchemaType.getLogSchemaCollection());
+        Document document = mongoTemplateService.findById(eventSchemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null) {
-            String[] arguments = {"logSchema", logEventSchemaId};
+            String[] arguments = {"logSchema", "" + eventSchemaId};
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
 
@@ -110,11 +92,11 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
     }
 
     @Override
-    public ResponseEntity<?> getLogSchemaProtoById(String logEventSchemaId) {
+    public ResponseEntity<?> getSchemaProtoById(int eventSchemaId) {
 
-        Document document = mongoTemplateService.findById(logEventSchemaId, EventSchemaType.getLogSchemaCollection());
+        Document document = mongoTemplateService.findById(eventSchemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null) {
-            String[] arguments = {"logSchema", logEventSchemaId};
+            String[] arguments = {"logSchema", ""+eventSchemaId};
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
 
@@ -129,10 +111,10 @@ public class LogEventSchemaImpl implements LogEventSchemaInterface {
     }
 
     @Override
-    public ResponseEntity<?> getAllLogSchemas() {
-       List<Document> result = mongoTemplateService.findAll(EventSchemaType.getLogSchemaCollection());
-       if (result.isEmpty())
-           return new ResponseEntity<>("No records found", HttpStatus.OK);
+    public ResponseEntity<?> getAllSchemas() {
+        List<Document> result = mongoTemplateService.findAll(EventSchemaType.getLogSchemaCollection());
+        if (result.isEmpty())
+            return new ResponseEntity<>("No records found", HttpStatus.OK);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

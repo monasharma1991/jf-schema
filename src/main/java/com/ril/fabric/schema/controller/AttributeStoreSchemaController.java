@@ -15,8 +15,8 @@ public class AttributeStoreSchemaController {
     @Autowired
     private AttributeStoreSchemaInterface attributeStoreSchemaInterface;
 
-    @PutMapping("/log/{logSchemaId}")
-    public ResponseEntity<?> addAttributeToSchema(@PathVariable String logSchemaId, @RequestParam String entityType, @RequestBody QuantityTemplate quantityTemplate) {
-        return attributeStoreSchemaInterface.addAttributeToSchema(logSchemaId, entityType, quantityTemplate);
+    @PutMapping("/{schemaId}")
+    public ResponseEntity<?> addAttributeToSchema(@PathVariable int schemaId, @RequestParam String entityType, @RequestParam String type, @RequestBody QuantityTemplate quantityTemplate) {
+        return attributeStoreSchemaInterface.addAttributeToSchema(schemaId, entityType, type, quantityTemplate);
     }
 }

@@ -1,7 +1,7 @@
 package com.ril.fabric.schema;
 
-import com.jio.commons.QtyNumeric;
-import com.jio.commons.Quantity;
+import com.jio.fabric.commons.FabricQtyNumeric;
+import com.jio.fabric.commons.FabricQuantity;
 import org.junit.jupiter.api.Test;
 
 public class JfSchemaTest {
@@ -14,16 +14,16 @@ public class JfSchemaTest {
 
     @Test
     public void prototemplateTest(){
-        Quantity.Builder quantityBuilder = Quantity.newBuilder();
-        quantityBuilder.setNumeric(QtyNumeric.newBuilder().setFloatValue(0).build());
-        Quantity quantity = quantityBuilder.build();
+        FabricQuantity.Builder quantityBuilder = FabricQuantity.newBuilder();
+        quantityBuilder.setNumeric(FabricQtyNumeric.newBuilder().setFloatValue(0).build());
+        FabricQuantity quantity = quantityBuilder.build();
 
         if (quantity.hasNumeric()){
             System.out.println(" Yes it is numeric");
-            QtyNumeric qtyNumeric = quantity.getNumeric();
-            if (qtyNumeric.getValueIsOneOfCase().equals(QtyNumeric.ValueIsOneOfCase.FLOAT_VALUE))
+            FabricQtyNumeric qtyNumeric = quantity.getNumeric();
+            if (qtyNumeric.getValueIsOneOfCase().equals(FabricQtyNumeric.ValueIsOneOfCase.FLOAT_VALUE))
                 System.out.println(" Yes it is float");
-            if (qtyNumeric.getValueIsOneOfCase().equals(QtyNumeric.ValueIsOneOfCase.SINT32_VALUE))
+            if (qtyNumeric.getValueIsOneOfCase().equals(FabricQtyNumeric.ValueIsOneOfCase.SINT32_VALUE))
                 System.out.println(" Yes it is sint32");
 
         }

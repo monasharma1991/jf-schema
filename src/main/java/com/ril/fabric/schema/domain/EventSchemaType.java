@@ -2,7 +2,7 @@ package com.ril.fabric.schema.domain;
 
 public class EventSchemaType {
 
-    private static String logSchemaCollection = "logSchema";
+    private static String logSchemaCollection = "jf_schema";
     private static final String pivotSchemaCollection = "pivotSchema";
 
     public static String getPivotSchemaCollection() {

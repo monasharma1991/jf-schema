@@ -2,13 +2,12 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.fabric.schema.FabricEntityStoreSchema;
-import com.jio.fabric.schema.FabricEventSchema;
+import com.jio.fabric.commons.FabricIndex;
+import com.jio.fabric.event.FabricEventSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.interfaces.EntityStoreSchemaInterface;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -30,11 +29,11 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
     private MessageSource msgSrc;
 
     @Override
-    public ResponseEntity<?> addEntitiesToLogSchema(String schemaId, Set<String> entities) {
+    public ResponseEntity<?> addEntitiesToSchema(int schemaId, Set<String> entities, String type) {
 
         Document document = mongoTemplateService.findById(schemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null) {
-            String[] arguments = {"logSchema", schemaId};
+            String[] arguments = {"logSchema", "" + schemaId};
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
 
@@ -46,11 +45,15 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        eventSchemaBuilder.getLogEventSchemaBuilder().setEntitiesSchema(FabricEntityStoreSchema.newBuilder().addAllKeys(entities).build());
+        if (type.equals("key"))
+            eventSchemaBuilder.getKeySchemaBuilder().setEntityType(FabricIndex.newBuilder().addAllKey(entities).build());
+
+        else if (type.equals("value"))
+            eventSchemaBuilder.getValueSchemaBuilder().setEntityType(FabricIndex.newBuilder().addAllKey(entities).build());
 
         try {
             Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
-            documentNew.put("_id", new ObjectId(schemaId));
+            documentNew.put("_id", schemaId);
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
@@ -59,11 +62,11 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
     }
 
     @Override
-    public ResponseEntity<?> addEntityToLogSchema(String schemaId, String entity) {
+    public ResponseEntity<?> addEntityToSchema(int schemaId, String entity, String type) {
 
         Document document = mongoTemplateService.findById(schemaId, EventSchemaType.getLogSchemaCollection());
         if (document == null) {
-            String[] arguments = {"logSchema", schemaId};
+            String[] arguments = {"schema", "" + schemaId};
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
 
@@ -75,16 +78,14 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        if (hasKey(entity, eventSchemaBuilder.getLogEventSchema().getEntitiesSchema())) {
-            String[] arguments = {"EntityType", entity};
-            return new ResponseEntity<>(msgSrc.getMessage("record.already.exists", arguments, Locale.getDefault()), HttpStatus.OK);
-        }
-
-        eventSchemaBuilder.getLogEventSchema().getEntitiesSchema().toBuilder().addKeys(entity);
+        if (type.equals("key"))
+            eventSchemaBuilder.getKeySchema().getEntityType().toBuilder().addKey(entity);
+        if (type.equals("value"))
+            eventSchemaBuilder.getValueSchema().getEntityType().toBuilder().addKey(entity);
 
         try {
             Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
-            documentNew.put("_id", new ObjectId(schemaId));
+            documentNew.put("_id", schemaId);
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
@@ -106,16 +107,4 @@ public class EntityStoreSchemaImpl implements EntityStoreSchemaInterface {
         return new ResponseEntity<>(documents, HttpStatus.OK);
     }
 
-    @Override
-    public ResponseEntity<?> addEntitiesToPivotSchema(String pivotSchemaId, Set<String> entities) {
-        return null;
-    }
-
-    private boolean hasKey(String entity, FabricEntityStoreSchema entitiesSchema) {
-
-        if (entitiesSchema.getKeysList().contains(entity))
-            return true;
-        else
-            return false;
-    }
 }

@@ -19,9 +19,9 @@ public class EntityStoreSchemaController {
     }
 
     @PutMapping("/{schemaId}")
-    public ResponseEntity<?> saveKeyToEntitySchema(@PathVariable String schemaId,
+    public ResponseEntity<?> saveKeyToEntitySchema(@PathVariable int schemaId, @RequestParam String type,
                                                    @RequestBody Set<String> entities) {
-        return entityStoreSchemaInterface.addEntitiesToLogSchema(schemaId, entities);
+        return entityStoreSchemaInterface.addEntitiesToSchema(schemaId, entities, type);
     }
 
     @PutMapping("/search")

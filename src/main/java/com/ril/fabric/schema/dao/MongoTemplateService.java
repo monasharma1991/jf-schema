@@ -15,7 +15,7 @@ public class MongoTemplateService {
     MongoTemplate mongoTemplate;
 
 
-    public Document findById(String schemaId, String schemaCollection) {
+    public Document findById(int schemaId, String schemaCollection) {
         Document document = mongoTemplate.findById(schemaId, Document.class, schemaCollection);
         return document;
     }

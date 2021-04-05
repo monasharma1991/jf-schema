@@ -15,9 +15,9 @@ public class PropertyStoreSchemaController {
     @Autowired
     private PropertyStoreSchemaInterface propertyStoreSchemaInterface;
 
-    @PutMapping("/log/{logSchemaId}")
-    public ResponseEntity<?> addPropertyToSchema(@PathVariable String logSchemaId, @RequestBody QuantityTemplate quantityTemplate){
-      return propertyStoreSchemaInterface.addPropertyToSchema(logSchemaId, quantityTemplate);
+    @PutMapping("/{schemaId}")
+    public ResponseEntity<?> addPropertyToSchema(@PathVariable int schemaId, @RequestParam String type, @RequestBody QuantityTemplate quantityTemplate) {
+        return propertyStoreSchemaInterface.addPropertyToSchema(schemaId, quantityTemplate, type);
     }
 
 }

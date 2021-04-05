@@ -4,5 +4,5 @@ import com.ril.fabric.schema.domain.QuantityTemplate;
 import org.springframework.http.ResponseEntity;
 
 public interface PropertyStoreSchemaInterface {
-    ResponseEntity<?> addPropertyToSchema(String logSchemaId, QuantityTemplate quantityTemplate);
+    ResponseEntity<?> addPropertyToSchema(int schemaId, QuantityTemplate quantityTemplate, String type);
 }

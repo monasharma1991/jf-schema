@@ -2,17 +2,17 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.commons.*;
-import com.jio.fabric.schema.FabricEventSchema;
-import com.jio.fabric.schema.FabricQuantitySchema;
-import com.jio.fabric.schema.FabricQuantityStoreSchema;
+import com.jio.fabric.commons.FabricQuantity;
+import com.jio.fabric.commons.FabricQuantitySchema;
+import com.jio.fabric.event.FabricEventSchema;
+import com.jio.fabric.store.FabricStoreSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
 import com.ril.fabric.schema.interfaces.PropertyStoreSchemaInterface;
+import com.ril.fabric.schema.util.QuantityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -35,17 +35,17 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
     private MessageSource msgSrc;
 
     @Override
-    public ResponseEntity<?> addPropertyToSchema(String logSchemaId, QuantityTemplate quantityTemplate) {
+    public ResponseEntity<?> addPropertyToSchema(int schemaId, QuantityTemplate quantityTemplate, String type) {
         // TODO - Validate QuantityTemplate
         List<String> errorList = validateQuantityTemplate(quantityTemplate);
-        if ( errorList!=null && errorList.size()>0 ){
+        if (errorList != null && errorList.size() > 0) {
             log.info("Invalid data for Adding Property to Schema in QuantityTemplate. Please Provide !!!");
             return new ResponseEntity<>(errorList, HttpStatus.BAD_REQUEST);
         }
 
-        Document document = mongoTemplateService.findById(logSchemaId, EventSchemaType.getLogSchemaCollection());
-        if (document == null){
-            String[] arguments = {"logSchema", logSchemaId};
+        Document document = mongoTemplateService.findById(schemaId, EventSchemaType.getLogSchemaCollection());
+        if (document == null) {
+            String[] arguments = {"schema", "" + schemaId};
             return new ResponseEntity<>(msgSrc.getMessage("db.notFound.msg", arguments, Locale.getDefault()), HttpStatus.NOT_FOUND);
         }
 
@@ -57,18 +57,28 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
             return new ResponseEntity<>(msgSrc.getMessage("proto.parse.exc", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        FabricQuantityStoreSchema.Builder propertyStoreSchema = eventSchemaBuilder.getLogEventSchema().getQuantitySchema().toBuilder();
+        FabricStoreSchema.Builder storeSchema = null;
+        if (type.equals("key"))
+            storeSchema = eventSchemaBuilder.getKeySchema().toBuilder();
+        else if (type.equals("value"))
+            storeSchema = eventSchemaBuilder.getValueSchema().toBuilder();
+
         String propertyName = quantityTemplate.getPropertyName();
-        if (propertyStoreSchema.getKeysList().contains(propertyName))
+        if (storeSchema.getProperty().getKeyList().contains(propertyName))
             return new ResponseEntity<>("Already exists", HttpStatus.INTERNAL_SERVER_ERROR);
 
-        propertyStoreSchema.addKeys(propertyName);
-        propertyStoreSchema.putValues(propertyName, getQuantitySchema(quantityTemplate));
-        eventSchemaBuilder.getLogEventSchemaBuilder().setQuantitySchema(propertyStoreSchema);
+        storeSchema.getPropertyBuilder().addKey(propertyName);
+        FabricQuantity fabricQuantity = QuantityUtils.getQuantitySchema(quantityTemplate);
+        storeSchema.putTemplate(propertyName, fabricQuantity);
+
+        if (type.equals("key"))
+            eventSchemaBuilder.setKeySchema(storeSchema);
+        else if (type.equals("value"))
+            eventSchemaBuilder.setValueSchema(storeSchema);
 
         try {
             Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));
-            documentNew.put("_id", new ObjectId(logSchemaId));
+            documentNew.put("_id", schemaId);
             mongoTemplateService.saveDocument(documentNew, EventSchemaType.getLogSchemaCollection());
             return new ResponseEntity<>(documentNew.toJson(), HttpStatus.OK);
         } catch (InvalidProtocolBufferException e) {
@@ -76,75 +86,15 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
         }
     }
 
-    private List<String> validateQuantityTemplate(QuantityTemplate quantityTemplate){
+    private List<String> validateQuantityTemplate(QuantityTemplate quantityTemplate) {
         List<String> errorList = new ArrayList<>();
 
-        if ( quantityTemplate.getPropertyName() == null )
+        if (quantityTemplate.getPropertyName() == null)
             errorList.add("Property Name is not null in QuantityTemplate. Please Provide First !!!");
-        if ( quantityTemplate.getQuantityType() == null )
+        if (quantityTemplate.getQuantityType() == null)
             errorList.add("Unit is not null in QuantityTemplate. Please Provide first !!!");
 
         return errorList;
     }
 
-    private FabricQuantitySchema getQuantitySchema(QuantityTemplate quantityTemplate) {
-
-        FabricQuantitySchema.Builder propertyBuilder = FabricQuantitySchema.newBuilder();
-        propertyBuilder.setType(quantityTemplate.getType());
-        propertyBuilder.setUnit(quantityTemplate.getUnit());
-        Quantity.Builder quantityBuilder = Quantity.newBuilder();
-
-        if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyNumeric))
-            setNumericSubType(quantityTemplate.getQuantitySubType(), quantityBuilder);
-        else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtySymbolic))
-            quantityBuilder.setSymbolic(QtySymbolic.newBuilder().build());
-        else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyTemporal))
-            setTemporalSubType(quantityTemplate.getQuantitySubType(), quantityBuilder);
-        else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtySpatial))
-            quantityBuilder.setSpatial(QtySpatial.newBuilder().build());
-        else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyDemographic))
-            quantityBuilder.setDemographic(QtyDemographic.newBuilder().build());
-        else if (quantityTemplate.getQuantityType().equals(QuantityTemplate.JfQuantityType.QtyMonetary))
-            quantityBuilder.setMonetary(QtyMonetary.newBuilder().build());
-
-        propertyBuilder.setQuantityTemplate(quantityBuilder.build());
-        return propertyBuilder.build();
-
-    }
-
-    private void setTemporalSubType(QuantityTemplate.JfQuantitySubType quantitySubType, Quantity.Builder quantityBuilder) {
-        switch (quantitySubType) {
-            case timestamp:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setTimestamp(QtyTimestamp.newBuilder().build()).build());
-            case date:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setDate(QtyDate.newBuilder().build()).build());
-            case time:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setTime(QtyTime.newBuilder()).build());
-            case date_time:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setDateTime(QtyDateTime.newBuilder()).build());
-            case date_range:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setDateRange(QtyDateRange.newBuilder()).build());
-            case time_range:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setTimeRange(QtyTimeRange.newBuilder()).build());
-            case duration:
-                quantityBuilder.setTemporal(QtyTemporal.newBuilder().setDuration(QtyDuration.newBuilder().build()).build());
-        }
-    }
-
-    private void setNumericSubType(QuantityTemplate.JfQuantitySubType quantitySubType, Quantity.Builder quantityBuilder) {
-        switch (quantitySubType) {
-            case float_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setFloatValue(0).build());
-            case double_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setDoubleValue(0).build());
-            case sint32_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setSint32Value(0).build());
-            case sint64_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setSint64Value(0).build());
-            case uint32_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setUint32Value(0).build());
-            case uint64_value:
-                quantityBuilder.setNumeric(QtyNumeric.newBuilder().setUint64Value(0).build());
-        }
-    }
 }
