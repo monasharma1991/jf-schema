@@ -1,7 +1,7 @@
 package com.ril.fabric.schema;
 
-import com.jio.fabric.commons.FabricQtyNumeric;
-import com.jio.fabric.commons.FabricQuantity;
+import com.jio.fabric.FabricQtyNumeric;
+import com.jio.fabric.FabricQuantity;
 import org.junit.jupiter.api.Test;
 
 public class JfSchemaTest {

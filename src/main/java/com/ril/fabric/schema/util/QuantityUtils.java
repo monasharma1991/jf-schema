@@ -1,6 +1,6 @@
 package com.ril.fabric.schema.util;
 
-import com.jio.fabric.commons.*;
+import com.jio.fabric.*;
 import com.ril.fabric.schema.domain.QuantityTemplate;
 
 public class QuantityUtils {
