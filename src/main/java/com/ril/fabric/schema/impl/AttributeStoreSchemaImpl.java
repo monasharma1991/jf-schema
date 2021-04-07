@@ -3,16 +3,13 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.fabric.commons.FabricIndex;
-import com.jio.fabric.commons.FabricQuantity;
-import com.jio.fabric.commons.FabricQuantitySchema;
-import com.jio.fabric.event.FabricEventSchema;
-import com.jio.fabric.store.FabricStoreSchema;
+import com.jio.fabric.FabricEventSchema;
+import com.jio.fabric.FabricIndex;
+import com.jio.fabric.FabricStoreSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
 import com.ril.fabric.schema.interfaces.AttributeStoreSchemaInterface;
-import com.ril.fabric.schema.util.QuantityUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -72,8 +69,9 @@ public class AttributeStoreSchemaImpl implements AttributeStoreSchemaInterface {
             storeSchema.putAttribute(entityType, fabricIndex.build());
         }
 
-        FabricQuantity fabricQuantity = QuantityUtils.getQuantitySchema(quantityTemplate);
-        storeSchema.putTemplate(propertyName, fabricQuantity);
+      //  FabricQuantity fabricQuantity = QuantityUtils.getQuantitySchema(quantityTemplate);
+        String quantityType = ""; //get it from FabricQuantitySchemaTable
+        storeSchema.putTemplate(propertyName, quantityType);
 
         try {
             Document documentNew = Document.parse(JsonFormat.printer().print(eventSchemaBuilder));

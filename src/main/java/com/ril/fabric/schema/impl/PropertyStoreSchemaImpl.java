@@ -2,15 +2,12 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.fabric.commons.FabricQuantity;
-import com.jio.fabric.commons.FabricQuantitySchema;
-import com.jio.fabric.event.FabricEventSchema;
-import com.jio.fabric.store.FabricStoreSchema;
+import com.jio.fabric.FabricEventSchema;
+import com.jio.fabric.FabricStoreSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.domain.QuantityTemplate;
 import com.ril.fabric.schema.interfaces.PropertyStoreSchemaInterface;
-import com.ril.fabric.schema.util.QuantityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +65,9 @@ public class PropertyStoreSchemaImpl implements PropertyStoreSchemaInterface {
             return new ResponseEntity<>("Already exists", HttpStatus.INTERNAL_SERVER_ERROR);
 
         storeSchema.getPropertyBuilder().addKey(propertyName);
-        FabricQuantity fabricQuantity = QuantityUtils.getQuantitySchema(quantityTemplate);
-        storeSchema.putTemplate(propertyName, fabricQuantity);
+      //  FabricQuantity fabricQuantity = QuantityUtils.getQuantitySchema(quantityTemplate);
+        String quantityType = ""; //get it from FabricQuantitySchemaTable
+        storeSchema.putTemplate(propertyName, quantityType);
 
         if (type.equals("key"))
             eventSchemaBuilder.setKeySchema(storeSchema);

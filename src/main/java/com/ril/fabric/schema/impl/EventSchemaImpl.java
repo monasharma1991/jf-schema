@@ -3,7 +3,7 @@ package com.ril.fabric.schema.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.jio.fabric.event.FabricEventSchema;
+import com.jio.fabric.FabricEventSchema;
 import com.ril.fabric.schema.dao.MongoTemplateService;
 import com.ril.fabric.schema.domain.EventSchemaType;
 import com.ril.fabric.schema.exception.ExceptionResponse;
